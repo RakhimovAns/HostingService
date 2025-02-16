@@ -1,0 +1,7 @@
+./idea
+.idea
+*.coverage
+*.coverage.out
+./projects!/projects/
+./projects
+*.out

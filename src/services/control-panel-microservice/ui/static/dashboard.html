@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #007bff;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input[type="text"], .form-group input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .file-manager {
+            margin-top: 20px;
+        }
+        .file-manager ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-manager ul li {
+            padding: 10px;
+            background-color: #f8f9fa;
+            margin-bottom: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-manager ul li span {
+            font-weight: bold;
+        }
+        .file-manager ul li button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .file-manager ul li button:hover {
+            background-color: #c82333;
+        }
+        .docker-toggle {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .docker-toggle label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        .docker-toggle .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .docker-toggle .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .docker-toggle .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        .docker-toggle .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        .docker-toggle input:checked + .slider {
+            background-color: #007bff;
+        }
+        .docker-toggle input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Project Manager</h1>
+    <div class="form-group">
+        <label for="projectName">Project Name:</label>
+        <input type="text" id="projectName" placeholder="Enter project name">
+        <button class="button" onclick="createProject()">Create Project</button>
+    </div>
+    <div class="form-group">
+        <button class="button" onclick="deleteProject()">Delete Project</button>
+    </div>
+    <div class="form-group">
+        <label for="fileUpload">Upload Files:</label>
+        <input type="file" id="fileUpload" multiple>
+        <button class="button" onclick="uploadFiles()">Upload</button>
+    </div>
+    <div class="file-manager">
+        <h2>File Manager</h2>
+        <ul id="fileList">
+            <!-- Files will be dynamically added here -->
+        </ul>
+    </div>
+    <div class="docker-toggle">
+        <label>Docker Compose:</label>
+        <div class="switch">
+            <input type="checkbox" id="dockerToggle">
+            <span class="slider"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function createProject() {
+        const projectName = document.getElementById('projectName').value;
+        const response = await fetch('http://localhost:8084/v1/project/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: projectName }),
+        });
+        if (response.ok) {
+            alert('Project created successfully');
+        } else {
+            alert('Failed to create project');
+        }
+    }
+
+    async function deleteProject() {
+        const response = await fetch('http://localhost:8084/v1/project/delete', {
+            method: 'DELETE',
+        });
+        if (response.ok) {
+            alert('Project deleted successfully');
+        } else {
+            alert('Failed to delete project');
+        }
+    }
+
+    async function uploadFiles() {
+        const files = document.getElementById('fileUpload').files;
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files', files[i]);
+        }
+        const response = await fetch('http://localhost:8085/upload', {
+            method: 'POST',
+            body: formData,
+        });
+        if (response.ok) {
+            alert('Files uploaded successfully');
+            loadFiles();
+        } else {
+            alert('Failed to upload files');
+        }
+    }
+
+    async function toggleDockerCompose() {
+        const toggle = document.getElementById('dockerToggle');
+        const endpoint = toggle.checked ? 'http://localhost:8085/run-docker-compose' : 'http://localhost:8085/stop-docker-compose';
+        const response = await fetch(endpoint, {
+            method: 'POST',
+        });
+        if (response.ok) {
+            alert(`Docker Compose ${toggle.checked ? 'started' : 'stopped'} successfully`);
+        } else {
+            alert('Failed to toggle Docker Compose');
+        }
+    }
+
+    async function loadFiles() {
+        const response = await fetch('http://localhost:8084/v1/project/gets');
+        if (response.ok) {
+            const files = await response.json();
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            files.forEach(file => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${file}</span><button onclick="deleteFile('${file}')">Delete</button>`;
+                fileList.appendChild(li);
+            });
+        }
+    }
+
+    async function deleteFile(filename) {
+        const response = await fetch(`http://localhost:8084/v1/project/delete?filename=${filename}`, {
+            method: 'DELETE',
+        });
+        if (response.ok) {
+            alert('File deleted successfully');
+            loadFiles();
+        } else {
+            alert('Failed to delete file');
+        }
+    }
+
+    document.getElementById('dockerToggle').addEventListener('change', toggleDockerCompose);
+    window.onload = loadFiles;
+</script>
+</body>
+</html>
